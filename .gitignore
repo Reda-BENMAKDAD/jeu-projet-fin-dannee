@@ -1,3 +1,5 @@
 ./.idea/
 ./out/
 JeuSommaire.iml
+target/
+./target/

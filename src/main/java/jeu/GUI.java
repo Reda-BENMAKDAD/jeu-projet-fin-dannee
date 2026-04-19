@@ -39,7 +39,7 @@ public class GUI implements ActionListener {
     private final JLabel image;
     
 	/** Nom du repertoire des images. */
-    private static final String NomRepertoireImages = "jeu/images/";
+    private static final String NomRepertoireImages = "images/";
 
     public GUI(Jeu jeu) {
         // Jeu
