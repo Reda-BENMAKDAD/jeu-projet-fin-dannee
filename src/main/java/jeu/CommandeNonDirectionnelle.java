@@ -3,9 +3,8 @@ package jeu;
 /**
  * Enumération des commandes non directionnelles du jeu.
  * <p>
- * Ces commandes ne correspondent pas à un déplacement dans une direction,
- * mais à des actions générales du joueur : interaction avec l'environnement,
- * gestion de l'inventaire, informations sur l'état du joueur, ou contrôle du jeu.
+ * Ces commandes couvrent les interactions avec l'environnement, la gestion de
+ * l'inventaire, les énigmes et le contrôle général du jeu.
  * Chaque commande possède une <b>abréviation</b> et une <b>description complète</b>.
  */
 public enum CommandeNonDirectionnelle implements Commande {
@@ -22,14 +21,23 @@ public enum CommandeNonDirectionnelle implements Commande {
   /** Affiche une description détaillée de la zone courante. */
   OBSERVER("OBS", "OBS (observer la zone)"),
 
-  /** Prend un objet présent dans la zone. Syntaxe : PRENDRE <objet> */
+  /** Prend un objet présent dans la zone. Syntaxe : PRENDRE &lt;objet&gt; */
   PRENDRE("P", "P <objet> (prendre un objet)"),
 
-  /** Dépose un objet du sac dans la zone courante. Syntaxe : DEPOSER <objet> */
+  /** Dépose un objet du sac dans la zone courante. Syntaxe : DEPOSER &lt;objet&gt; */
   DEPOSER("DEP", "DEP <objet> (déposer un objet)"),
+
+  /** Utilise un objet du sac dans le contexte courant. Syntaxe : UTILISER &lt;objet&gt; */
+  UTILISER("U", "U <objet> (utiliser un objet)"),
 
   /** Lit le texte présent dans la zone (tableau, panneau, écran). */
   LIRE("L", "L (lire le tableau / panneau)"),
+
+  /** Répond à une énigme active. Syntaxe : CHOISIR &lt;réponse&gt; */
+  CHOISIR("CH", "CH <réponse> (répondre à une énigme)"),
+
+  /** Parle au personnage non-joueur présent dans la zone. */
+  PARLER("PA", "PA (parler à un personnage)"),
 
   /** Revient à la zone précédente (multi-niveaux). */
   RETOUR("R", "R (retour)"),
