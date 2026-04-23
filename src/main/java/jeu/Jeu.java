@@ -304,15 +304,7 @@ public class Jeu {
     batimentMega.ajouterObjet(new Item("Clé de sortie", 2,
         "Une lourde clé qui ouvre le portail final. Occupe 2 emplacements."));
 
-    // ── Objets de test (remplacés par placement aléatoire en Couche 5) ───────
-    salleSecondaire.ajouterObjet(new Item("Carte de professeur", 1,
-        "Badge officiel d'un professeur. L'agent MEGA en forme l'exigera."));
-    salleSecondaire.ajouterObjet(new Item("Stylo", 1,
-        "Vous protège d'une perte d'énergie lors de votre première erreur."));
-    salleSecondaire.ajouterObjet(new Item("Lampe Torche", 1,
-        "Indispensable dans les zones plongées dans le noir."));
-    restaurantU.ajouterObjet(new Item("Boisson Énergisante", 1,
-        "Récupérez 25 points d'énergie. UTILISER Boisson Énergisante."));
+    // Items mobiles placés aléatoirement dans placerObjetsMobiles()
 
     // ── Textes lisibles (définis dynamiquement pour LP et RU/Distributeur) ───
     couloir.setTexte(
@@ -350,6 +342,8 @@ public class Jeu {
     genererEnigmeDistributeur();
     humeurAgent = aleatoire.nextBoolean() ? HumeurAgent.FORME : HumeurAgent.EPUISE;
     codeMega = String.format("%04d", aleatoire.nextInt(9000) + 1000);
+    placerObjetsMobiles();
+    appliquerCoupures();
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -423,6 +417,58 @@ public class Jeu {
     mettreAJourTexteRU();
   }
 
+  /**
+   * Répartit aléatoirement les quatre items mobiles dans quatre zones distinctes.
+   * Chaque zone reçoit exactement un item (bijection via Fisher-Yates).
+   * Items : Stylo, Lampe Torche, Boisson Énergisante, Carte de professeur.
+   * Zones cibles : SalleDeCours, SalleSecondaire, Couloir, RestaurantU.
+   */
+  private void placerObjetsMobiles() {
+    Item[] items = {
+      new Item("Stylo", 1,
+          "Absorbe automatiquement la perte d'énergie de votre première erreur d'énigme."),
+      new Item("Lampe Torche", 1,
+          "Éclaire les zones sombres. Sans elle, chaque action en zone noire coûte 5 énergie."),
+      new Item("Boisson Énergisante", 1,
+          "+25 énergie. Utilisez-la via : U Boisson Énergisante."),
+      new Item("Carte de professeur", 1,
+          "Badge officiel. Indispensable si l'agent MEGA est en forme.")
+    };
+    Zone[] zones = {salleDeCours, salleSecondaire, couloir, restaurantU};
+
+    // Mélange Fisher-Yates sur les zones cibles
+    for (int i = zones.length - 1; i > 0; i--) {
+      int j = aleatoire.nextInt(i + 1);
+      Zone tmp = zones[i];
+      zones[i] = zones[j];
+      zones[j] = tmp;
+    }
+    for (int i = 0; i < items.length; i++) {
+      zones[i].ajouterObjet(items[i]);
+    }
+  }
+
+  /**
+   * Plonge 1 ou 2 zones dans le noir (coupure de courant aléatoire).
+   * Zones candidates : Couloir, SalleSecondaire, RestaurantU.
+   * Dans une zone sombre sans Lampe Torche, chaque action coûte 5 énergie.
+   */
+  private void appliquerCoupures() {
+    Zone[] candidats = {couloir, salleSecondaire, restaurantU};
+    int nb = aleatoire.nextInt(2) + 1; // 1 ou 2 coupures
+
+    // Mélange Fisher-Yates sur les candidats
+    for (int i = candidats.length - 1; i > 0; i--) {
+      int j = aleatoire.nextInt(i + 1);
+      Zone tmp = candidats[i];
+      candidats[i] = candidats[j];
+      candidats[j] = tmp;
+    }
+    for (int i = 0; i < nb; i++) {
+      candidats[i].setDansLeNoir(true);
+    }
+  }
+
   /** Tire au sort l'énigme Java et met à jour le texte du distributeur. */
   private void genererEnigmeDistributeur() {
     indexEnigmeJava = aleatoire.nextInt(ENIGMES_JAVA.length);
@@ -476,7 +522,8 @@ public class Jeu {
    * Traite une commande saisie par l'utilisateur.
    * <p>
    * La commande est découpée en verbe + argument optionnel (pour les commandes
-   * paramétrées). Après traitement, applique le drain d'énergie de la salle bloquante.
+   * paramétrées). Après traitement, applique le drain d'énergie passif :
+   * salle bloquante (-10/action) ou zone sombre sans lampe (-5/action).
    *
    * @param commande la saisie brute du joueur
    */
@@ -512,14 +559,26 @@ public class Jeu {
           "Commande inconnue : \"" + verbe + "\". Tapez ? pour l'aide.\n");
     }
 
-    // Drain d'énergie dans la salle bloquante (toute action coûte 10 pts)
-    if (!partieTerminee && zoneCourante == salleBloquante) {
-      joueur.perdreEnergie(10);
-      gui.afficher("[Salle bloquante — Énergie : " + joueur.getEnergie() + "/100 "
-          + barreEnergie(joueur.getEnergie()) + "]");
-      gui.afficher();
-      if (joueur.estMort()) {
-        gameOver("Vos forces vous abandonnent dans cette salle sans issue...\nGame over.");
+    // Drain d'énergie passif après chaque commande
+    if (!partieTerminee) {
+      if (zoneCourante == salleBloquante) {
+        // Salle bloquante : -10 par action
+        joueur.perdreEnergie(10);
+        gui.afficher("[Salle bloquante — Énergie : " + joueur.getEnergie() + "/100 "
+            + barreEnergie(joueur.getEnergie()) + "]");
+        gui.afficher();
+        if (joueur.estMort()) {
+          gameOver("Vos forces vous abandonnent dans cette salle sans issue...\nGame over.");
+        }
+      } else if (zoneCourante.isDansLeNoir() && !joueur.possedeItem("Lampe Torche")) {
+        // Zone sombre sans lampe : -5 par action
+        joueur.perdreEnergie(5);
+        gui.afficher("[Zone sombre — Énergie : " + joueur.getEnergie() + "/100 "
+            + barreEnergie(joueur.getEnergie()) + "]");
+        gui.afficher();
+        if (joueur.estMort()) {
+          gameOver("Vous vous perdez dans le noir complet... Game over.");
+        }
       }
     }
   }
@@ -596,6 +655,14 @@ public class Jeu {
     }
 
     afficherLocalisation();
+
+    // Avertissement à l'entrée d'une zone sombre
+    if (zoneCourante.isDansLeNoir() && !joueur.possedeItem("Lampe Torche")) {
+      gui.afficher("[COUPURE DE COURANT ! Il fait nuit noire ici.]");
+      gui.afficher("[Chaque action vous coûtera 5 énergie supplémentaires.]");
+      gui.afficher("[Trouvez une Lampe Torche pour en être protégé(e).]");
+      gui.afficher();
+    }
 
     if (zoneCourante == sortieUniversite) {
       victoire();
