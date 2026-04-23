@@ -42,6 +42,9 @@ public enum CommandeNonDirectionnelle implements Commande {
   /** Revient à la zone précédente (multi-niveaux). */
   RETOUR("R", "R (retour)"),
 
+  /** Sauvegarde la partie en cours. */
+  SAUVEGARDER("SAV", "SAV (sauvegarder la partie)"),
+
   /** Termine le jeu. */
   QUITTER("Q", "Q (quitter)");
 

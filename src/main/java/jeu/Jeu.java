@@ -1,5 +1,12 @@
 package jeu;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Random;
 
 /**
@@ -20,7 +27,9 @@ import java.util.Random;
  *   <li>Ouvrir la Sortie de l'université → victoire</li>
  * </ol>
  */
-public class Jeu {
+public class Jeu implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   // ══════════════════════════════════════════════════════════════════════════
   // DONNÉES STATIQUES — énigmes
@@ -136,10 +145,10 @@ public class Jeu {
   // ══════════════════════════════════════════════════════════════════════════
 
   /** Générateur de nombres aléatoires pour la variabilité des énigmes. */
-  private final Random aleatoire;
+  private transient Random aleatoire;
 
   /** Interface graphique associée au jeu. */
-  private GUI gui;
+  private transient GUI gui;
 
   /** Zone actuelle dans laquelle se trouve le joueur. */
   private Zone zoneCourante;
@@ -249,6 +258,19 @@ public class Jeu {
     creerCarte();
     initialiserEnigmes();
     gui = null;
+  }
+
+  /**
+   * Réinitialise les champs transitoires après désérialisation.
+   * Appelée automatiquement par {@link ObjectInputStream} lors du chargement d'une sauvegarde.
+   *
+   * @param in le flux de désérialisation
+   * @throws IOException en cas d'erreur d'entrée/sortie
+   * @throws ClassNotFoundException si une classe est introuvable
+   */
+  private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    aleatoire = new Random();
   }
 
   /**
@@ -489,6 +511,78 @@ public class Jeu {
     afficherMessageDeBienvenue();
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // SAUVEGARDE / CHARGEMENT
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /** Répertoire de stockage des sauvegardes. */
+  private static final String DOSSIER_SAVES = "saves";
+
+  /**
+   * Retourne le chemin du fichier de sauvegarde pour un joueur donné.
+   *
+   * @param nomJoueur le nom du joueur
+   * @return chemin relatif du fichier {@code .sav}
+   */
+  private static String cheminSauvegarde(String nomJoueur) {
+    return DOSSIER_SAVES + File.separator + nomJoueur.toLowerCase() + ".sav";
+  }
+
+  /**
+   * Indique si une sauvegarde existe pour le joueur donné.
+   *
+   * @param nomJoueur le nom du joueur
+   * @return {@code true} si le fichier de sauvegarde est présent
+   */
+  public static boolean sauvegardeExiste(String nomJoueur) {
+    return new File(cheminSauvegarde(nomJoueur)).exists();
+  }
+
+  /**
+   * Charge et retourne la sauvegarde du joueur donné.
+   *
+   * @param nomJoueur le nom du joueur
+   * @return l'instance {@link Jeu} désérialisée
+   * @throws IOException en cas d'erreur de lecture
+   * @throws ClassNotFoundException si la classe {@link Jeu} est introuvable
+   */
+  public static Jeu chargerSauvegarde(String nomJoueur) throws IOException, ClassNotFoundException {
+    try (ObjectInputStream ois =
+        new ObjectInputStream(new FileInputStream(cheminSauvegarde(nomJoueur)))) {
+      return (Jeu) ois.readObject();
+    }
+  }
+
+  /**
+   * Sauvegarde l'état courant du jeu dans {@code saves/<nomJoueur>.sav}.
+   * Crée le répertoire {@code saves/} si nécessaire.
+   */
+  private void sauvegarder() {
+    new File(DOSSIER_SAVES).mkdirs();
+    try (ObjectOutputStream oos =
+        new ObjectOutputStream(new FileOutputStream(cheminSauvegarde(joueur.getNom())))) {
+      oos.writeObject(this);
+      gui.afficher("Partie sauvegardée.");
+    } catch (IOException e) {
+      gui.afficher("Erreur lors de la sauvegarde : " + e.getMessage());
+    }
+    gui.afficher();
+  }
+
+  /**
+   * Attache une interface graphique à une partie chargée et affiche l'état courant.
+   * À appeler à la place de {@link #setGUI} lors d'une reprise de sauvegarde.
+   *
+   * @param g l'instance de {@link GUI} à associer
+   */
+  public void restaurerGUI(GUI g) {
+    gui = g;
+    gui.afficher("=== Partie reprise — " + joueur.getNom() + " ===");
+    gui.afficher("Énergie : " + joueur.getEnergie() + "/100  " + barreEnergie(joueur.getEnergie()));
+    gui.afficher();
+    afficherLocalisation();
+  }
+
   /** Vérifie que la GUI est initialisée. */
   private void verifieGUI() {
     if (gui == null) {
@@ -554,6 +648,7 @@ public class Jeu {
       case "L",    "LIRE"                   -> lire();
       case "CH",   "CHOISIR"                -> traiterChoix(arg);
       case "PA",   "PARLER"                 -> parler();
+      case "SAV",  "SAUVEGARDER"            -> sauvegarder();
       case "Q",    "QUITTER"                -> terminer();
       default -> gui.afficher(
           "Commande inconnue : \"" + verbe + "\". Tapez ? pour l'aide.\n");
