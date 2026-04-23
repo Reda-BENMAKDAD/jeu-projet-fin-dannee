@@ -38,6 +38,9 @@ public class Zone implements Serializable {
   /** Si {@code true}, la sortie vers cette zone est bloquée jusqu'à déverrouillage. */
   private boolean verrouillee;
 
+  /** Texte lisible dans la zone (tableau, panneau, écran) affiché par la commande LIRE. */
+  private String texte;
+
   /**
    * Construit une zone avec une description et un nom d'image.
    *
@@ -52,6 +55,7 @@ public class Zone implements Serializable {
     this.sansRetour = false;
     this.dansLeNoir = false;
     this.verrouillee = false;
+    this.texte = null;
   }
 
   /**
@@ -196,6 +200,24 @@ public class Zone implements Serializable {
    */
   public void setVerrouillee(boolean verrouillee) {
     this.verrouillee = verrouillee;
+  }
+
+  /**
+   * Retourne le texte lisible de la zone (tableau, panneau, écran).
+   *
+   * @return le texte, ou {@code null} si rien à lire
+   */
+  public String getTexte() {
+    return texte;
+  }
+
+  /**
+   * Définit le texte lisible de la zone.
+   *
+   * @param texte le contenu textuel affiché par la commande LIRE
+   */
+  public void setTexte(String texte) {
+    this.texte = texte;
   }
 
   /** Retourne une chaîne listant les directions disponibles. */
