@@ -16,7 +16,7 @@ package jeu;
  *
  * Exemple d'utilisation :
  * <pre>
- *     Jeu jeu = new Jeu();
+ *     Jeu jeu = new Jeu("nomJoueur");
  *     GUI gui = new GUI(jeu);
  *     jeu.setGUI(gui);
  * </pre>
@@ -28,15 +28,20 @@ public class Jeu {
 	private Zone zonePrecedente;
 	/** Zone actuelle dans laquelle se trouve le joueur */
 	private Zone zoneCourante;
+	/** Nom du joueur actuellement connecté */
+	private String nomJoueur;
     
 	/**
-     * Construit un nouveau jeu.
+     * Construit un nouveau jeu avec un joueur authentifié.
      * <p>
      * Les zones sont créées et reliées entre elles, mais l'interface graphique
      * n'est pas encore initialisée. Utiliser {@link #setGUI(GUI)} pour associer
      * une interface.
+     * 
+     * @param nomJoueur le nom du joueur connecté
      */
-	public Jeu() {
+	public Jeu(String nomJoueur) {
+        this.nomJoueur = nomJoueur;
         creerCarte();
         gui = null;
     }
@@ -97,7 +102,7 @@ public class Jeu {
      */
 	private void afficherMessageDeBienvenue() {
 		verifieGUI();
-		gui.afficher("Bienvenue !");
+		gui.afficher("Bienvenue " + nomJoueur + " !");
     	gui.afficher();
         gui.afficher("Tapez '?' pour obtenir de l'aide.");
         gui.afficher();
