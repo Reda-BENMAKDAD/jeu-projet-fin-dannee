@@ -3,16 +3,13 @@ package jeu;
 /**
  * La classe {@code Jeu} représente la logique principale du jeu.
  * <p>
- * Elle gère les zones, les déplacements, les commandes utilisateur et
- * l'interaction avec l'interface graphique {@link GUI}.
+ * Elle gère les dix zones du scénario, les déplacements, les commandes
+ * utilisateur et l'interaction avec l'interface graphique {@link GUI}.
  * <p>
- * Les fonctionnalités principales incluent :
- * <ul>
- *   <li>Création et initialisation des zones du jeu</li>
- *   <li>Affichage de la localisation et des images correspondantes</li>
- *   <li>Traitement des commandes saisies par l'utilisateur</li>
- *   <li>Gestion de la fin du jeu</li>
- * </ul>
+ * Les sorties conditionnelles (Couloir→Escaliers, Couloir→SalleBloquante)
+ * sont ajoutées dynamiquement par la logique des énigmes (Couche 4).
+ * Les zones verrouillées (BatimentMEGA, SortieUniversite) nécessitent des
+ * conditions de jeu pour être accessibles.
  *
  * Exemple d'utilisation :
  * <pre>
@@ -32,12 +29,43 @@ public class Jeu {
   /** Le joueur courant (énergie, inventaire, historique de navigation). */
   private Joueur joueur;
 
+  // ── Références aux zones (utilisées par la logique des énigmes) ──────────
+
+  /** Zone de départ — énigme du tableau pour déverrouiller le couloir. */
+  private Zone salleDeCours;
+
+  /** Couloir principal — labyrinthe BFS, hub vers salle secondaire et escaliers. */
+  private Zone couloir;
+
+  /** Salle secondaire — optionnelle, objets aléatoires. */
+  private Zone salleSecondaire;
+
+  /**
+   * Salle bloquante — sans retour, game over progressif.
+   * Pas de sortie dans la carte ; téléportation déclenchée par 3 erreurs BFS.
+   */
+  private Zone salleBloquante;
+
+  /** Escaliers — accès conditionné par la réussite du BFS dans le couloir. */
+  private Zone escaliers;
+
+  /** Hall principal — hub central, jamais de coupure de courant. */
+  private Zone hall;
+
+  /** Restaurant universitaire — énigme plat. */
+  private Zone restaurantU;
+
+  /** Distributeur automatique — énigme code Java, donne code MEGA + cadeau. */
+  private Zone distributeur;
+
+  /** Bâtiment MEGA — agent de sécurité, verrouillé jusqu'à obtention du code. */
+  private Zone batimentMega;
+
+  /** Sortie de l'université — victoire, verrouillée jusqu'à obtention de la clé. */
+  private Zone sortieUniversite;
+
   /**
    * Construit un nouveau jeu avec un joueur authentifié.
-   * <p>
-   * Les zones sont créées et reliées entre elles, mais l'interface graphique
-   * n'est pas encore initialisée. Utiliser {@link #setGUI(GUI)} pour associer
-   * une interface.
    *
    * @param nomJoueur le nom du joueur connecté
    */
@@ -58,23 +86,72 @@ public class Jeu {
   }
 
   /**
-   * Crée et initialise les zones du jeu et leurs sorties.
+   * Crée les dix zones du scénario avec leurs sorties, attributs et objets fixes.
+   *
+   * <p>Sorties non ajoutées ici (gérées dynamiquement en Couche 4) :
+   * <ul>
+   *   <li>Couloir → Escaliers : ajoutée après réussite du labyrinthe BFS</li>
+   *   <li>Couloir → SalleBloquante : déclenchée après 3 erreurs BFS</li>
+   * </ul>
    */
   private void creerCarte() {
-    Zone[] zones = new Zone[4];
-    zones[0] = new Zone("le couloir", "Couloir.jpg");
-    zones[1] = new Zone("l'escalier", "Escalier.jpg");
-    zones[2] = new Zone("la grande salle", "GrandeSalle.jpg");
-    zones[3] = new Zone("la salle à manger", "SalleAManger.jpg");
+    // ── Création des zones ───────────────────────────────────────────────────
+    salleDeCours = new Zone("la salle de cours", "SalleDeCours.jpg");
+    couloir = new Zone("le couloir principal", "CouloirPrincipal.jpg");
+    salleSecondaire = new Zone("la salle secondaire", "SalleSecondaire.jpg");
+    salleBloquante = new Zone("la salle bloquante", "SalleBloquante.jpg");
+    escaliers = new Zone("les escaliers", "Escaliers.jpg");
+    hall = new Zone("le hall principal", "HallPrincipal.jpg");
+    restaurantU = new Zone("le restaurant universitaire", "RestaurantU.jpg");
+    distributeur = new Zone("le distributeur automatique", "Distributeur.jpg");
+    batimentMega = new Zone("le bâtiment MEGA", "BatimentMEGA.jpg");
+    sortieUniversite = new Zone("la sortie de l'université", "SortieUniversite.jpg");
 
-    zones[0].ajouteSortie(Direction.EST, zones[1]);
-    zones[1].ajouteSortie(Direction.OUEST, zones[0]);
-    zones[1].ajouteSortie(Direction.EST, zones[2]);
-    zones[2].ajouteSortie(Direction.OUEST, zones[1]);
-    zones[3].ajouteSortie(Direction.SUD, zones[0]);
-    zones[0].ajouteSortie(Direction.NORD, zones[3]);
+    // ── Attributs spéciaux ───────────────────────────────────────────────────
+    salleBloquante.setSansRetour(true);
+    // BatimentMEGA : verrouillé jusqu'à présentation du code distributeur + carte
+    batimentMega.setVerrouillee(true);
+    // SortieUniversite : verrouillée jusqu'à obtention de la clé de sortie
+    sortieUniversite.setVerrouillee(true);
 
-    zoneCourante = zones[0];
+    // ── Sorties statiques ────────────────────────────────────────────────────
+
+    // SalleDeCours ↔ Couloir
+    // (vérification énigme tableau ajoutée en Couche 4 dans allerEn())
+    salleDeCours.ajouteSortie(Direction.NORD, couloir);
+    couloir.ajouteSortie(Direction.SUD, salleDeCours);
+
+    // Couloir ↔ SalleSecondaire (libre)
+    couloir.ajouteSortie(Direction.EST, salleSecondaire);
+    salleSecondaire.ajouteSortie(Direction.OUEST, couloir);
+
+    // Escaliers ↔ Couloir et Hall (libres)
+    escaliers.ajouteSortie(Direction.SUD, couloir);
+    escaliers.ajouteSortie(Direction.NORD, hall);
+    hall.ajouteSortie(Direction.SUD, escaliers);
+
+    // Hall ↔ RestaurantU (libre)
+    hall.ajouteSortie(Direction.EST, restaurantU);
+    restaurantU.ajouteSortie(Direction.OUEST, hall);
+
+    // Hall ↔ Distributeur (libre)
+    hall.ajouteSortie(Direction.OUEST, distributeur);
+    distributeur.ajouteSortie(Direction.EST, hall);
+
+    // Hall → BatimentMEGA (verrouillé)
+    hall.ajouteSortie(Direction.NORD, batimentMega);
+
+    // BatimentMEGA ↔ Hall + BatimentMEGA → SortieUniversite (verrouillée)
+    batimentMega.ajouteSortie(Direction.SUD, hall);
+    batimentMega.ajouteSortie(Direction.NORD, sortieUniversite);
+
+    // ── Objets fixes ─────────────────────────────────────────────────────────
+    salleDeCours.ajouterObjet(
+        new Item("Feuille de brouillon", 1,
+            "Une feuille couverte de notes. On y devine : nom du prof, matière, code."));
+
+    // ── Zone de départ ───────────────────────────────────────────────────────
+    zoneCourante = salleDeCours;
   }
 
   /** Vérifie que la GUI est initialisée avant toute interaction. */
@@ -84,7 +161,7 @@ public class Jeu {
     }
   }
 
-  /** Affiche la description complète de la zone actuelle via l'interface graphique. */
+  /** Affiche la description complète de la zone actuelle. */
   private void afficherLocalisation() {
     verifieGUI();
     gui.afficher(zoneCourante.descriptionLongue());
@@ -109,7 +186,7 @@ public class Jeu {
    * <ul>
    *   <li>?, AIDE : affiche l'aide</li>
    *   <li>N/NORD, S/SUD, E/EST, O/OUEST : déplacements</li>
-   *   <li>R/RETOUR : revenir à la zone précédente</li>
+   *   <li>R/RETOUR : revenir à la zone précédente (multi-niveaux)</li>
    *   <li>I/INVENTAIRE : affiche le sac et l'énergie</li>
    *   <li>Q/QUITTER : termine le jeu</li>
    * </ul>
@@ -146,8 +223,9 @@ public class Jeu {
   /**
    * Déplace le joueur vers une nouvelle zone dans la direction donnée.
    * <p>
-   * La zone courante est empilée dans l'historique sauf si elle est marquée
-   * {@code sansRetour}.
+   * Vérifie l'existence de la sortie, puis l'état verrouillé de la destination
+   * avant d'effectuer le déplacement. La zone courante est empilée dans
+   * l'historique sauf si elle est marquée {@code sansRetour}.
    *
    * @param direction la direction du déplacement
    */
@@ -156,6 +234,9 @@ public class Jeu {
     Zone nouvelle = zoneCourante.obtientSortie(direction);
     if (nouvelle == null) {
       gui.afficher("Pas de sortie " + direction);
+      gui.afficher();
+    } else if (nouvelle.isVerrouillee()) {
+      gui.afficher(messagePourZoneVerrouillee(nouvelle));
       gui.afficher();
     } else {
       if (!zoneCourante.isSansRetour()) {
@@ -169,8 +250,25 @@ public class Jeu {
   }
 
   /**
+   * Retourne le message d'accès refusé adapté à la zone verrouillée.
+   *
+   * @param zone la zone verrouillée
+   * @return message à afficher au joueur
+   */
+  private String messagePourZoneVerrouillee(Zone zone) {
+    if (zone == batimentMega) {
+      return "L'entrée du bâtiment MEGA est verrouillée.\n"
+          + "L'agent de sécurité vous barre la route. Il vous faut le code d'accès.";
+    }
+    if (zone == sortieUniversite) {
+      return "Le portail de sortie est verrouillé.\n"
+          + "Il vous faut la clé de sortie pour l'ouvrir.";
+    }
+    return "Cette zone est verrouillée. Vous devez remplir certaines conditions pour y accéder.";
+  }
+
+  /**
    * Revient à la zone précédente en dépilant l'historique du joueur.
-   * <p>
    * Impossible si l'historique est vide ou si la zone courante est sans retour.
    */
   private void retour() {
