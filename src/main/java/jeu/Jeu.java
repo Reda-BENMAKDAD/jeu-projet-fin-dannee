@@ -761,13 +761,17 @@ public class Jeu implements Serializable {
 
     // ── Cas spécial : aller vers NORD dans le couloir → déclenche le BFS ─────
     if (zoneCourante == couloir && direction == Direction.NORD) {
-      if (!bfsActif) {
-        demarrerBFS();
-      } else {
-        gui.afficher("Labyrinthe en cours ! Utilisez CHOISIR <N/S/E/O> pour avancer.");
-        gui.afficher();
+      if (!bfsActif && bfsEtape < 3) {
+          demarrerBFS();
+          return;
       }
-      return;
+
+      // 🔥 SI labyrinthe EN COURS
+      if (bfsActif) {
+          gui.afficher("Labyrinthe en cours ! Utilisez CHOISIR.");
+          gui.afficher();
+          return;
+      }
     }
 
     Zone nouvelle = zoneCourante.obtientSortie(direction);
