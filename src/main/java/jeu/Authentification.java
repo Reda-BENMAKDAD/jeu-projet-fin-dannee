@@ -258,10 +258,36 @@ public class Authentification implements ActionListener {
     }
 
     /**
-     * Démarre le jeu 
+     * Démarre ou reprend le jeu après une connexion réussie.
+     * Si une sauvegarde existe pour le joueur, propose de la reprendre via une boîte de dialogue.
      */
     private void demarrerJeu() {
         fenetre.dispose();
+        if (Jeu.sauvegardeExiste(nomUtilisateurConnecte)) {
+            int reponse = JOptionPane.showConfirmDialog(
+                null,
+                "Une sauvegarde existe pour " + nomUtilisateurConnecte
+                    + ".\nVoulez-vous reprendre la partie ?",
+                "Sauvegarde détectée",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (reponse == JOptionPane.YES_OPTION) {
+                try {
+                    Jeu jeu = Jeu.chargerSauvegarde(nomUtilisateurConnecte);
+                    GUI gui = new GUI(jeu);
+                    jeu.restaurerGUI(gui);
+                    return;
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(
+                        null,
+                        "Impossible de charger la sauvegarde : " + e.getMessage()
+                            + "\nUne nouvelle partie va démarrer.",
+                        "Erreur de chargement",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        }
         Jeu jeu = new Jeu(nomUtilisateurConnecte);
         GUI gui = new GUI(jeu);
         jeu.setGUI(gui);
