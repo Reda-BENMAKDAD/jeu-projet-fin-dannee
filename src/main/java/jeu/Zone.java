@@ -108,7 +108,19 @@ public class Zone implements Serializable {
     if (dansLeNoir) {
       sb.append("\n[Il fait nuit noire — vous ne voyez presque rien.]");
     }
-    sb.append("\nSorties : ").append(sorties());
+    if (sorties.isEmpty()) {
+      sb.append("\nAucune sortie visible.");
+      if (texte != null && !texte.isEmpty()) {
+        sb.append(" Lisez ce qu'il y a dans la pièce (L).");
+      }
+    } else {
+      StringBuilder dirs = new StringBuilder();
+      for (Direction d : sorties.keySet()) {
+        if (dirs.length() > 0) dirs.append(" | ");
+        dirs.append(d.name());
+      }
+      sb.append("\nSorties disponibles : ").append(dirs);
+    }
     if (!objets.isEmpty() && !dansLeNoir) {
       sb.append("\nObjets visibles : ").append(listeObjets());
     }

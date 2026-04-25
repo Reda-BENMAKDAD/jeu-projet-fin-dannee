@@ -95,6 +95,11 @@ public class GUI implements ActionListener {
         afficher("");
     }
 
+    /** Vide entièrement la zone de texte. */
+    public void effacer() {
+        SwingUtilities.invokeLater(() -> texte.setText(""));
+    }
+
     /** Affiche une image depuis le dossier resources */
     public void afficheImage(String nomImage) {
     	SwingUtilities.invokeLater(() -> {

@@ -284,16 +284,36 @@ public class Jeu implements Serializable {
    * </ul>
    */
   private void creerCarte() {
-    salleDeCours   = new Zone("la salle de cours",            "SalleDeCours.jpg");
-    couloir        = new Zone("le couloir principal",          "CouloirPrincipal.jpg");
-    salleSecondaire = new Zone("la salle secondaire",         "SalleSecondaire.jpg");
-    salleBloquante = new Zone("la salle bloquante",            "SalleBloquante.jpg");
-    escaliers      = new Zone("les escaliers",                 "Escaliers.jpg");
-    hall           = new Zone("le hall principal",             "HallPrincipal.jpg");
-    restaurantU    = new Zone("le restaurant universitaire",   "RestaurantU.jpg");
-    distributeur   = new Zone("le distributeur automatique",   "Distributeur.jpg");
-    batimentMega   = new Zone("le bâtiment MEGA",              "BatimentMEGA.jpg");
-    sortieUniversite = new Zone("la sortie de l'université",   "SortieUniversite.jpg");
+    salleDeCours    = new Zone(
+        "une salle de cours déserte, les lumières de secours éclairant faiblement un tableau couvert d'équations",
+        "SalleDeCours.png");
+    couloir         = new Zone(
+        "un long couloir plongé dans la pénombre, plusieurs portes fermées de chaque côté",
+        "CouloirPrincipal.png");
+    salleSecondaire = new Zone(
+        "une petite salle annexe, des chaises empilées et un bureau encombré de papiers",
+        "SalleSecondaire.png");
+    salleBloquante  = new Zone(
+        "une salle sans fenêtre — la porte derrière vous vient de se verrouiller dans un claquement",
+        "SalleBloquante.png");
+    escaliers       = new Zone(
+        "la cage d'escalier en béton, vos pas résonnent dans le silence",
+        "Escaliers.png");
+    hall            = new Zone(
+        "le hall d'entrée de l'université, grand et désert, plusieurs couloirs s'en échappent",
+        "HallPrincipal.png");
+    restaurantU     = new Zone(
+        "le restaurant universitaire fermé, comptoir inox et tables retournées sur les chaises",
+        "RestaurantU.png");
+    distributeur    = new Zone(
+        "un recoin du hall où bourdonnent deux distributeurs automatiques éclairés au néon",
+        "Distributeur.png");
+    batimentMega    = new Zone(
+        "l'entrée du bâtiment administratif MEGA, un tourniquet de sécurité bloque le passage",
+        "BatimentMEGA.png");
+    sortieUniversite = new Zone(
+        "le portail de sortie de l'université, l'air frais de la nuit filtre par les grilles",
+        "SortieUniversite.png");
 
     salleBloquante.setSansRetour(true);
     batimentMega.setVerrouillee(true);
@@ -594,16 +614,52 @@ public class Jeu implements Serializable {
   private void afficherLocalisation() {
     gui.afficher(zoneCourante.descriptionLongue());
     gui.afficher();
+    afficherConseilZone();
     gui.afficheImage(zoneCourante.nomImage());
+  }
+
+  /** Affiche un conseil contextuel court et actionnable selon la zone courante. */
+  private void afficherConseilZone() {
+    if (zoneCourante == salleDeCours) {
+      gui.afficher("[Conseil : Il y a un tableau avec une énigme. Tapez L pour le lire.]");
+    } else if (zoneCourante == couloir) {
+      gui.afficher("[Conseil : Tapez N pour démarrer le labyrinthe vers les escaliers.]");
+    } else if (zoneCourante == salleSecondaire) {
+      gui.afficher("[Conseil : Regardez les objets posés ici (OBS). Utiles pour la suite.]");
+    } else if (zoneCourante == salleBloquante) {
+      gui.afficher("[DANGER : Cette salle vous coûte de l'énergie par action. Impossible de revenir !]");
+    } else if (zoneCourante == escaliers) {
+      gui.afficher("[Conseil : Le hall principal est vers le nord (N). Le couloir vers le sud (S).]");
+    } else if (zoneCourante == hall) {
+      gui.afficher("[Conseil : Explorez — RU à l'est (E), distributeur à l'ouest (O), MEGA au nord (N).]");
+    } else if (zoneCourante == restaurantU) {
+      gui.afficher("[Conseil : Lisez le menu (L) et choisissez un plat (CH <numéro>).]");
+    } else if (zoneCourante == distributeur) {
+      gui.afficher("[Conseil : Lisez l'écran du distributeur (L) et répondez à l'énigme (CH <réponse>).]");
+    } else if (zoneCourante == batimentMega) {
+      gui.afficher("[Conseil : Parlez au gardien (PA) pour voir ce qu'il demande.]");
+    } else if (zoneCourante == sortieUniversite) {
+      gui.afficher("[Vous approchez de la sortie. Il vous faut la Clé de sortie.]");
+    }
+    gui.afficher();
   }
 
   /** Affiche le message de bienvenue et l'état initial. */
   private void afficherMessageDeBienvenue() {
     verifieGUI();
-    gui.afficher("Bienvenue " + joueur.getNom() + " !");
+    gui.afficher("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    gui.afficher("  NUIT À LA FAC  —  " + joueur.getNom());
+    gui.afficher("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     gui.afficher();
-    gui.afficher("Vous vous réveillez dans l'université déserte. Il faut s'échapper avant l'aube !");
-    gui.afficher("Tapez ? pour l'aide.");
+    gui.afficher("Vous vous êtes endormi(e) pendant un cours de Recherche Opérationnelle.");
+    gui.afficher("Quand vous rouvrez les yeux, la salle est vide. Les lumières de secours");
+    gui.afficher("s'allument. L'université est fermée à clé pour la nuit.");
+    gui.afficher();
+    gui.afficher("Objectif : trouver une sortie avant l'aube.");
+    gui.afficher("Énergie : 100/100 — Sac : 4 emplacements max.");
+    gui.afficher();
+    gui.afficher("Commencez par observer la pièce (OBS) ou lire le tableau (L).");
+    gui.afficher("Tapez ? pour voir toutes les commandes disponibles.");
     gui.afficher();
     afficherLocalisation();
   }
@@ -626,6 +682,7 @@ public class Jeu implements Serializable {
     if (partieTerminee) {
       return;
     }
+    gui.effacer();
     gui.afficher("> " + commande + "\n");
 
     String[] parts = commande.trim().split("\\s+", 2);
@@ -810,13 +867,34 @@ public class Jeu implements Serializable {
   // COMMANDES D'INFORMATION ET D'INTERACTION DE BASE
   // ══════════════════════════════════════════════════════════════════════════
 
-  /** Affiche l'aide listant toutes les commandes. */
+  /** Affiche l'aide listant toutes les commandes, groupées par catégorie. */
   private void afficherAide() {
-    gui.afficher("Commandes disponibles :");
+    gui.afficher("═══════════ AIDE ═══════════");
     gui.afficher();
-    for (String desc : Commande.toutesLesDescriptions()) {
-      gui.afficher("  " + desc);
-    }
+    gui.afficher("Déplacement :");
+    gui.afficher("  N / S / E / O — se déplacer dans une direction");
+    gui.afficher("  R — retourner dans la pièce précédente");
+    gui.afficher();
+    gui.afficher("Exploration :");
+    gui.afficher("  OBS — observer la pièce (objets, sorties, état)");
+    gui.afficher("  L — lire le tableau, panneau ou écran de la pièce");
+    gui.afficher();
+    gui.afficher("Inventaire :");
+    gui.afficher("  I — voir votre sac et les emplacements restants");
+    gui.afficher("  P <nom> — ramasser un objet de la pièce");
+    gui.afficher("  DEP <nom> — poser un objet de votre sac");
+    gui.afficher("  U <nom> — utiliser un objet de votre sac");
+    gui.afficher();
+    gui.afficher("Énigmes & personnages :");
+    gui.afficher("  CH <réponse> — soumettre une réponse à une énigme");
+    gui.afficher("  PA — parler à un personnage présent");
+    gui.afficher();
+    gui.afficher("Système :");
+    gui.afficher("  ET — afficher votre niveau d'énergie");
+    gui.afficher("  SAV — sauvegarder la partie en cours");
+    gui.afficher("  ? — afficher cette aide");
+    gui.afficher("  Q — quitter le jeu");
+    gui.afficher("════════════════════════════");
     gui.afficher();
   }
 
