@@ -45,17 +45,17 @@ public class Jeu implements Serializable {
     { // SUD
       "Un écho de la porte d'entrée résonne derrière vous.",
       "La lumière rouge ENTRÉE est visible en arrière dans le couloir.",
-      "Un marquage au sol : '← Entrée principale 50 m'."
+      "Une plaque indique : L'ancenseur est disfonctionnel, pour aller vers le hall, veuillez prendre les escaliers derière vous."
     },
     { // EST
       "Un post-it jaune : '→ Salle informatique' collé sur le mur.",
-      "Le bourdonnement des serveurs vient de votre droite.",
+      "Vous entendez des bruits d'tudiants dans le couloir à votre droite.",
       "La lumière de la fenêtre arrive de l'est, côté droit."
     },
     { // OUEST
       "Une plaque usée indique '← Réserve pédagogique' à gauche.",
       "Des traces de chariot récentes filent vers la gauche.",
-      "L'odeur de la reprographie vient de l'ouest."
+      "Un marquage au sol : '← Entrée principale 50 m'."
     }
   };
 
